@@ -18,6 +18,10 @@ dependencies = [
   "PyYAML>=6.0.2",
   "platformdirs>=4.3.6",
   "keyring>=25.5.0",
+  "undetected-chromedriver>=3.5.5",
+  "selenium>=4.48.0",
+  "cloudflare-bypasser>=1.0.0",
+  "setuptools>=84.0.0",
 ]
 
 [project.urls]

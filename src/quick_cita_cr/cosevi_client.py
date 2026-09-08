@@ -1,11 +1,23 @@
 from __future__ import annotations
 
-from contextlib import suppress
 from datetime import UTC, datetime
 
-from playwright.sync_api import Page, sync_playwright
-from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import Select
+from undetected_chromedriver import Chrome  # type: ignore[import-untyped]
 
+from .browser import (
+    CloudflareSolver,
+    get_browser,
+    human_click,
+    human_delay,
+    human_type,
+    is_visible,
+    wait_and_find,
+    wait_and_find_clickable,
+    wait_for_hidden,
+)
 from .config import AppConfig, Secrets
 from .models import BranchSnapshot
 from .parser import parse_appointment_dates
@@ -24,132 +36,193 @@ class CoseviPlaywrightClient:
         self.config = config
         self.secrets = secrets
         self.headless = config.browser.headless if headed is None else not headed
+        self._driver: Chrome | None = None
 
     def __enter__(self) -> CoseviPlaywrightClient:
-        self._playwright = sync_playwright().start()
         profile_dir = self.config.browser.profile_dir.expanduser()
-        profile_dir.mkdir(parents=True, exist_ok=True)
-        self._context = self._playwright.chromium.launch_persistent_context(
-            user_data_dir=str(profile_dir),
+
+        driver = get_browser(
+            profile_dir=profile_dir,
+            executable_path=self.config.browser.executable_path,
             headless=self.headless,
-            channel=self.config.browser.channel,
-            executable_path=str(self.config.browser.executable_path.expanduser())
-            if self.config.browser.executable_path
-            else None,
-            locale="es-CR",
-            timezone_id="America/Costa_Rica",
         )
-        self._context.set_default_timeout(self.config.browser.timeout_seconds * 1000)
-        self._page = self._context.pages[0] if self._context.pages else self._context.new_page()
+        self._driver = driver
+
+        # Set page load timeout based on config
+        driver.set_page_load_timeout(self.config.browser.timeout_seconds)
+
+        self.solver = CloudflareSolver(driver)
         return self
 
     def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
-        self._context.close()
-        self._playwright.stop()
+        if self._driver:
+            self._driver.quit()
+            self._driver = None
 
     @property
-    def page(self) -> Page:
-        return self._page
+    def driver(self) -> Chrome:
+        if not self._driver:
+            raise RuntimeError("Browser not initialized. Use as a context manager.")
+        return self._driver
+
+    def _solve_cloudflare(self) -> None:
+        """Wait for Cloudflare resolution if present"""
+        if self.solver.is_challenge_present():
+            if not self.solver.solve(timeout=45):
+                raise HumanInterventionRequired(
+                    "Cloudflare challenge could not be bypassed automatically. Run with --headed."
+                )
+            human_delay(1000, 2000)
 
     def ensure_logged_in(self) -> None:
-        self.page.goto(LOGIN_URL, wait_until="domcontentloaded")
+        self.driver.get(LOGIN_URL)
+        self._solve_cloudflare()
+
         if self._looks_logged_in():
             return
+
         self._stop_if_human_verification_visible()
-        self._select_by_value_or_label("select.selector-tipos-identificacion", self.secrets.id_type)
-        self.page.locator("#identificacion").fill(self.secrets.identification.get_secret_value())
-        self.page.locator("#contrasena").fill(self.secrets.password.get_secret_value())
-        self.page.locator("#botonAcceder").click()
+
+        # ID Type
+        id_type_select = Select(wait_and_find(self.driver, "select.selector-tipos-identificacion"))
+        id_type_select.select_by_value(self.secrets.id_type)
+        human_delay(300, 800)
+
+        # Identification
+        id_input = wait_and_find(self.driver, "#identificacion")
+        human_type(id_input, self.secrets.identification.get_secret_value())
+
+        # Password
+        pass_input = wait_and_find(self.driver, "#contrasena")
+        human_type(pass_input, self.secrets.password.get_secret_value())
+
+        # Submit
+        submit_btn = wait_and_find_clickable(self.driver, "#botonAcceder")
+        human_click(self.driver, submit_btn)
+
         self._wait_for_loading_modal()
         self._dismiss_existing_session_prompt()
         self._stop_if_human_verification_visible()
+
         if not self._looks_logged_in():
-            raise RuntimeError("Login did not reach an authenticated page; run with --headed to inspect.")
+            raise RuntimeError(
+                "Login did not reach an authenticated page; run with --headed to inspect."
+            )
 
     def prepare_practical_test_flow(self) -> None:
         self.ensure_logged_in()
-        self.page.goto(PRACTICAL_TEST_URL, wait_until="domcontentloaded")
+        self.driver.get(PRACTICAL_TEST_URL)
+        self._solve_cloudflare()
+
         self._stop_if_human_verification_visible()
-        self.page.locator("#numRecibo").fill(self.secrets.receipt_number.get_secret_value())
-        self._select_by_value_or_label("select.selector-licencia", self.config.appointment.license_class)
-        checkbox = self.page.locator("#check-AceptaTerminos")
-        if not checkbox.is_checked():
-            checkbox.check()
-        self.page.locator("#botonContinuar").click()
+
+        # Receipt Number
+        receipt_input = wait_and_find(self.driver, "#numRecibo")
+        human_type(receipt_input, self.secrets.receipt_number.get_secret_value())
+
+        # License Class
+        license_select = Select(wait_and_find(self.driver, "select.selector-licencia"))
+        try:
+            license_select.select_by_value(self.config.appointment.license_class)
+        except NoSuchElementException:
+            license_select.select_by_visible_text(self.config.appointment.license_class)
+        human_delay(400, 900)
+
+        # Accept terms
+        checkbox = wait_and_find(self.driver, "#check-AceptaTerminos")
+        if not checkbox.is_selected():
+            human_click(self.driver, checkbox)
+
+        # Continue
+        continue_btn = wait_and_find_clickable(self.driver, "#botonContinuar")
+        human_click(self.driver, continue_btn)
+
         self._wait_for_loading_modal()
 
     def check_branch(self, branch: str) -> BranchSnapshot:
         if not self._branch_list_visible():
             self.prepare_practical_test_flow()
+
         self._select_branch(branch)
-        self.page.locator("#botonContinuarSedes").click()
+
+        continue_btn = wait_and_find_clickable(self.driver, "#botonContinuarSedes")
+        human_click(self.driver, continue_btn)
+
         self._wait_for_loading_modal()
         self._stop_if_human_verification_visible()
-        text = self.page.locator("body").inner_text()
+
+        # Extract text from page body
+        body_element = wait_and_find(self.driver, "body")
+        text = body_element.text
+
         slots = parse_appointment_dates(text, branch=branch)
         self._go_back_to_branches_if_possible()
+
         return BranchSnapshot(branch=branch, checked_at=datetime.now(UTC), slots=slots)
 
     def _looks_logged_in(self) -> bool:
-        return (
-            self.page.locator("a.encabezado-boton-salir").count() > 0
-            or self.page.get_by_text("Salir", exact=True).count() > 0
-        )
+        return is_visible(self.driver, "a.encabezado-boton-salir:not(.oculto)", timeout=3)
 
     def _branch_list_visible(self) -> bool:
-        try:
-            return self.page.locator("#listaSedes").count() > 0
-        except PlaywrightTimeoutError:
-            return False
+        return is_visible(self.driver, "#listaSedes", timeout=3)
 
     def _select_branch(self, branch: str) -> None:
-        items = self.page.locator("#listaSedes li")
-        count = items.count()
-        for index in range(count):
-            item = items.nth(index)
-            if branch.lower() in item.inner_text().lower():
-                item.click()
-                return
+        try:
+            items = self.driver.find_elements(By.CSS_SELECTOR, "#listaSedes li")
+            for item in items:
+                if branch.lower() in item.text.lower():
+                    human_click(self.driver, item)
+                    return
+        except NoSuchElementException:
+            pass
         raise RuntimeError(f"Branch not found in visible list: {branch}")
 
-    def _select_by_value_or_label(self, selector: str, value: str) -> None:
-        locator = self.page.locator(selector)
-        try:
-            locator.select_option(value=value)
-        except Exception:
-            locator.select_option(label=value)
-
     def _wait_for_loading_modal(self) -> None:
-        with suppress(PlaywrightTimeoutError):
-            self.page.locator(".modal-carga").wait_for(state="hidden", timeout=10_000)
+        wait_for_hidden(self.driver, ".modal-carga", timeout=10)
+        human_delay(200, 500)
 
     def _dismiss_existing_session_prompt(self) -> None:
-        for selector in ["button.cancel", ".cancel", "text=Si", "text=Sí"]:
-            locator = self.page.locator(selector)
-            if locator.count() > 0:
-                try:
-                    locator.first.click(timeout=1_000)
+        selectors = ["button.cancel", ".cancel", "//*[text()='Si']", "//*[text()='Sí']"]
+
+        for selector in selectors:
+            by = By.XPATH if selector.startswith("//") else By.CSS_SELECTOR
+            try:
+                elements = self.driver.find_elements(by, selector)
+                if elements and elements[0].is_displayed():
+                    human_click(self.driver, elements[0])
                     self._wait_for_loading_modal()
                     return
-                except Exception:
-                    continue
+            except Exception:
+                continue
 
     def _go_back_to_branches_if_possible(self) -> None:
-        for selector in ["#botonAtrasCitas", "#botonAtras", "text=Atrás", "text=Regresar"]:
-            locator = self.page.locator(selector)
-            if locator.count() > 0:
-                try:
-                    locator.first.click(timeout=2_000)
+        selectors = [
+            "#botonAtrasCitas",
+            "#botonAtras",
+            "//*[text()='Atrás']",
+            "//*[text()='Regresar']",
+        ]
+
+        for selector in selectors:
+            by = By.XPATH if selector.startswith("//") else By.CSS_SELECTOR
+            try:
+                elements = self.driver.find_elements(by, selector)
+                if elements and elements[0].is_displayed():
+                    human_click(self.driver, elements[0])
                     self._wait_for_loading_modal()
                     return
-                except Exception:
-                    continue
+            except Exception:
+                continue
+
         self.prepare_practical_test_flow()
 
     def _stop_if_human_verification_visible(self) -> None:
-        body = self.page.locator("body").inner_text(timeout=5_000).lower()
-        triggers = ["captcha", "no soy un robot", "access denied", "acceso denegado"]
-        if any(trigger in body for trigger in triggers):
-            raise HumanInterventionRequired(
-                "The portal is asking for human verification or denied access. Run headed and resolve manually."
-            )
+        try:
+            body = wait_and_find(self.driver, "body", timeout=5).text.lower()
+            triggers = ["captcha", "no soy un robot", "access denied", "acceso denegado"]
+            if any(trigger in body for trigger in triggers):
+                raise HumanInterventionRequired(
+                    "The portal is asking for human verification or denied access. Run headed and resolve manually."
+                )
+        except TimeoutException:
+            pass

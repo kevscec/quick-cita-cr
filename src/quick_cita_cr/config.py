@@ -45,6 +45,7 @@ class BrowserConfig(BaseModel):
     headless: bool = True
     channel: str | None = None
     executable_path: Path | None = None
+    cdp_url: str | None = None
     profile_dir: Path = DEFAULT_DATA_DIR / "browser-profile"
     timeout_seconds: int = Field(default=45, ge=10, le=180)
 
@@ -134,6 +135,7 @@ browser:
   headless: true
   channel: null
   executable_path: null
+  cdp_url: null
   profile_dir: ~/.local/share/quick-cita-cr/browser-profile
   timeout_seconds: 45
 notifications:
