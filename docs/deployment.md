@@ -10,7 +10,7 @@ Recommended production mode is the timer because every run is short-lived and st
 sudo apt-get update
 sudo apt-get install -y python3.12 python3.12-venv git
 curl -LsSf https://astral.sh/uv/install.sh | sh
-git clone https://github.com/KSCeciliano/quick-cita-cr.git ~/quick-cita-cr
+git clone https://github.com/kevscec/quick-cita-cr.git ~/quick-cita-cr
 cd ~/quick-cita-cr
 uv sync --frozen
 uv run playwright install --with-deps chromium

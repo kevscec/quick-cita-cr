@@ -21,9 +21,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/KSCeciliano/quick-cita-cr"
-Repository = "https://github.com/KSCeciliano/quick-cita-cr"
-Issues = "https://github.com/KSCeciliano/quick-cita-cr/issues"
+Homepage = "https://github.com/kevscec/quick-cita-cr"
+Repository = "https://github.com/kevscec/quick-cita-cr"
+Issues = "https://github.com/kevscec/quick-cita-cr/issues"
 
 [project.scripts]
 quick-cita = "quick_cita_cr.cli:app"
