@@ -32,6 +32,10 @@ class CoseviPlaywrightClient:
         self._context = self._playwright.chromium.launch_persistent_context(
             user_data_dir=str(profile_dir),
             headless=self.headless,
+            channel=self.config.browser.channel,
+            executable_path=str(self.config.browser.executable_path.expanduser())
+            if self.config.browser.executable_path
+            else None,
             locale="es-CR",
             timezone_id="America/Costa_Rica",
         )
@@ -87,7 +91,10 @@ class CoseviPlaywrightClient:
         return BranchSnapshot(branch=branch, checked_at=datetime.now(UTC), slots=slots)
 
     def _looks_logged_in(self) -> bool:
-        return self.page.locator("a.encabezado-boton-salir, text=Salir").count() > 0
+        return (
+            self.page.locator("a.encabezado-boton-salir").count() > 0
+            or self.page.get_by_text("Salir", exact=True).count() > 0
+        )
 
     def _branch_list_visible(self) -> bool:
         try:
@@ -141,7 +148,7 @@ class CoseviPlaywrightClient:
 
     def _stop_if_human_verification_visible(self) -> None:
         body = self.page.locator("body").inner_text(timeout=5_000).lower()
-        triggers = ["captcha", "no soy un robot", "verificación", "verificacion", "acceso denegado"]
+        triggers = ["captcha", "no soy un robot", "access denied", "acceso denegado"]
         if any(trigger in body for trigger in triggers):
             raise HumanInterventionRequired(
                 "The portal is asking for human verification or denied access. Run headed and resolve manually."

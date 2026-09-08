@@ -14,7 +14,20 @@ git clone https://github.com/kevscec/quick-cita-cr.git ~/quick-cita-cr
 cd ~/quick-cita-cr
 uv sync --frozen
 uv run playwright install --with-deps chromium
+uv run playwright install chrome
 uv run quick-cita init
+```
+
+For Cloudflare-sensitive flows, configure a real browser instead of Playwright's
+Chrome for Testing:
+
+```yaml
+browser:
+  headless: true
+  channel: chrome
+  executable_path: null
+  profile_dir: ~/.local/share/quick-cita-cr/browser-profile
+  timeout_seconds: 45
 ```
 
 ## Configure

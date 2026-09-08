@@ -108,6 +108,10 @@ schedule:
 
 browser:
   headless: true
+  # Prefer a real installed browser for production.
+  # Use either channel or executable_path, not both.
+  channel: chrome
+  executable_path: null
   profile_dir: ~/.local/share/quick-cita-cr/browser-profile
   timeout_seconds: 45
 
@@ -146,6 +150,7 @@ git clone https://github.com/kevscec/quick-cita-cr.git ~/quick-cita-cr
 cd ~/quick-cita-cr
 uv sync --frozen
 uv run playwright install --with-deps chromium
+uv run playwright install chrome
 uv run quick-cita init
 ```
 
