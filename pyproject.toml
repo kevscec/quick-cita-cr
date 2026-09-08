@@ -1,0 +1,62 @@
+[project]
+name = "quick-cita-cr"
+version = "0.1.0"
+description = "Polite local monitor for fast Costa Rica Educación Vial appointment openings."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Kevin Ceciliano" }]
+keywords = ["costa-rica", "cosevi", "educacion-vial", "appointments", "playwright", "monitoring"]
+dependencies = [
+  "playwright>=1.49.0",
+  "pydantic>=2.10.0",
+  "pydantic-settings>=2.6.0",
+  "typer>=0.15.0",
+  "rich>=13.9.0",
+  "httpx>=0.28.0",
+  "python-dotenv>=1.0.1",
+  "PyYAML>=6.0.2",
+  "platformdirs>=4.3.6",
+  "keyring>=25.5.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/KSCeciliano/quick-cita-cr"
+Repository = "https://github.com/KSCeciliano/quick-cita-cr"
+Issues = "https://github.com/KSCeciliano/quick-cita-cr/issues"
+
+[project.scripts]
+quick-cita = "quick_cita_cr.cli:app"
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3.4",
+  "pytest-cov>=6.0.0",
+  "ruff>=0.8.4",
+  "mypy>=1.14.0",
+  "types-requests>=2.32.0.20241016",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/quick_cita_cr"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["quick_cita_cr"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

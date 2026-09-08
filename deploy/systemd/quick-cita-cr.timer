@@ -1,0 +1,11 @@
+[Unit]
+Description=Run quick-cita-cr on a safe schedule
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=12min
+RandomizedDelaySec=3min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
