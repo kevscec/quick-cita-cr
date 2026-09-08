@@ -7,9 +7,16 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from .config import DEFAULT_CONFIG_PATH, DEFAULT_SECRETS_PATH, load_config, load_secrets, write_default_config
+from .config import (
+    DEFAULT_CONFIG_PATH,
+    DEFAULT_SECRETS_PATH,
+    load_config,
+    load_secrets,
+    write_default_config,
+)
 from .cosevi_client import CoseviPlaywrightClient, HumanInterventionRequired
-from .notifications import EmailNotifier, format_events
+from .models import WatchResult
+from .notifications import EmailNotifier, Notifier, format_events
 from .safety import next_sleep_seconds
 from .storage import Storage
 from .watcher import Watcher
@@ -18,10 +25,10 @@ app = typer.Typer(help="Monitor fast Costa Rica Educación Vial appointment open
 console = Console()
 
 
-def _build_notifiers(config_path: Path) -> tuple[object, ...]:
+def _build_notifiers(config_path: Path) -> tuple[Notifier, ...]:
     config = load_config(config_path)
     secrets = load_secrets()
-    notifiers: list[object] = []
+    notifiers: list[Notifier] = []
     email = config.notifications.email
     if email.enabled:
         if not secrets.email_username or secrets.email_password is None:
@@ -32,7 +39,7 @@ def _build_notifiers(config_path: Path) -> tuple[object, ...]:
     return tuple(notifiers)
 
 
-def _send_notifications(result, config_path: Path, force: bool = False) -> None:
+def _send_notifications(result: WatchResult, config_path: Path, force: bool = False) -> None:
     if not result.events and not force:
         return
     subject, body = format_events(result)
@@ -47,18 +54,12 @@ def init(config_path: Path = typer.Option(DEFAULT_CONFIG_PATH, help="Config file
     DEFAULT_SECRETS_PATH.parent.mkdir(parents=True, exist_ok=True)
     if not DEFAULT_SECRETS_PATH.exists():
         DEFAULT_SECRETS_PATH.write_text(
-            "QUICK_CITA_ID_TYPE=CI
-"
-            "QUICK_CITA_IDENTIFICATION=
-"
-            "QUICK_CITA_PASSWORD=
-"
-            "QUICK_CITA_RECEIPT_NUMBER=
-"
-            "QUICK_CITA_EMAIL_USERNAME=
-"
-            "QUICK_CITA_EMAIL_PASSWORD=
-",
+            "QUICK_CITA_ID_TYPE=CI\n"
+            "QUICK_CITA_IDENTIFICATION=\n"
+            "QUICK_CITA_PASSWORD=\n"
+            "QUICK_CITA_RECEIPT_NUMBER=\n"
+            "QUICK_CITA_EMAIL_USERNAME=\n"
+            "QUICK_CITA_EMAIL_PASSWORD=\n",
             encoding="utf-8",
         )
         DEFAULT_SECRETS_PATH.chmod(0o600)
@@ -124,7 +125,7 @@ def watch(
             failures += 1
             console.print(f"Check failed ({failures}): {exc}")
             if failures >= config.schedule.max_failures_before_pause:
-                sleep_for = config.schedule.pause_minutes_after_failures * 60
+                sleep_for = float(config.schedule.pause_minutes_after_failures * 60)
             else:
                 sleep_for = next_sleep_seconds(config.schedule)
             time.sleep(sleep_for)

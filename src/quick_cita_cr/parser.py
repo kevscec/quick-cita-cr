@@ -23,12 +23,12 @@ SPANISH_MONTHS = {
 }
 
 DATE_NUMERIC_RE = re.compile(
-    r"(?:lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo)?\s*"
-    r"(?P<day>\d{1,2})/(?P<month>\d{1,2})/(?P<year>\d{4})",
+    r"\b(?:lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo)?\s*"
+    r"(?P<day>\d{1,2})/(?P<month>\d{1,2})/(?P<year>\d{4})\b",
     re.IGNORECASE,
 )
 DATE_TEXT_RE = re.compile(
-    r"(?P<day>\d{1,2})\s+de\s+(?P<month>[a-záéíóúñ]+)\s+de\s+(?P<year>\d{4})",
+    r"\b(?P<day>\d{1,2})\s+de\s+(?P<month>[a-záéíóúñ]+)\s+de\s+(?P<year>\d{4})\b",
     re.IGNORECASE,
 )
 TAG_RE = re.compile(r"<[^>]+>")

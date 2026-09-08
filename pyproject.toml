@@ -34,6 +34,7 @@ dev = [
   "pytest-cov>=6.0.0",
   "ruff>=0.8.4",
   "mypy>=1.14.0",
+  "types-PyYAML>=6.0.12.20240917",
   "types-requests>=2.32.0.20241016",
 ]
 
@@ -50,7 +51,7 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
-ignore = ["E501"]
+ignore = ["E501", "B008"]
 
 [tool.mypy]
 python_version = "3.12"

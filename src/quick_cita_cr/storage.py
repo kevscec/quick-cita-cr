@@ -5,7 +5,7 @@ from collections.abc import Iterable
 from datetime import UTC, date, datetime
 from pathlib import Path
 
-from .models import AppointmentSlot, BranchSnapshot, EventType, WatchEvent
+from .models import BranchSnapshot, EventType, WatchEvent
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS slots (

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from quick_cita_cr.models import WatchEvent, WatchResult
+from quick_cita_cr.models import WatchResult
 
 
 class Notifier(Protocol):
@@ -24,5 +24,4 @@ def format_events(result: WatchResult) -> tuple[str, str]:
         best = snapshot.best_date.isoformat() if snapshot.best_date else "sin citas visibles"
         lines.append(f"- {snapshot.branch}: {len(snapshot.slots)} citas; mejor fecha: {best}")
     lines.extend(["", "Portal: https://servicios.educacionvial.go.cr/Formularios/IngresarCuenta"])
-    return subject, "
-".join(lines)
+    return subject, "\n".join(lines)

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from datetime import UTC, datetime
 
-from playwright.sync_api import Locator, Page, TimeoutError as PlaywrightTimeoutError, sync_playwright
+from playwright.sync_api import Page, sync_playwright
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 
 from .config import AppConfig, Secrets
 from .models import BranchSnapshot
@@ -23,7 +25,7 @@ class CoseviPlaywrightClient:
         self.secrets = secrets
         self.headless = config.browser.headless if headed is None else not headed
 
-    def __enter__(self) -> "CoseviPlaywrightClient":
+    def __enter__(self) -> CoseviPlaywrightClient:
         self._playwright = sync_playwright().start()
         profile_dir = self.config.browser.profile_dir.expanduser()
         profile_dir.mkdir(parents=True, exist_ok=True)
@@ -111,10 +113,8 @@ class CoseviPlaywrightClient:
             locator.select_option(label=value)
 
     def _wait_for_loading_modal(self) -> None:
-        try:
+        with suppress(PlaywrightTimeoutError):
             self.page.locator(".modal-carga").wait_for(state="hidden", timeout=10_000)
-        except PlaywrightTimeoutError:
-            pass
 
     def _dismiss_existing_session_prompt(self) -> None:
         for selector in ["button.cancel", ".cancel", "text=Si", "text=Sí"]:
