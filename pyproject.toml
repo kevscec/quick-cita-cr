@@ -30,6 +30,7 @@ Issues = "https://github.com/kevscec/quick-cita-cr/issues"
 
 [project.scripts]
 quick-cita = "quick_cita_cr.cli:app"
+quick-cita-cr = "quick_cita_cr.cli:app"
 
 [dependency-groups]
 dev = [

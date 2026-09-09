@@ -4,6 +4,8 @@ import time
 from pathlib import Path
 
 import typer
+import yaml
+from platformdirs import user_data_dir
 from rich.console import Console
 from rich.table import Table
 
@@ -23,6 +25,9 @@ from .watcher import Watcher
 
 app = typer.Typer(help="Monitor fast Costa Rica Educación Vial appointment openings.")
 console = Console()
+LOCAL_CHROME_FOR_TESTING = (
+    Path(user_data_dir("quick-cita-cr")) / "chrome-for-testing" / "chrome-linux64" / "chrome"
+)
 
 
 def _build_notifiers(config_path: Path) -> tuple[Notifier, ...]:
@@ -110,6 +115,48 @@ def check(
     _send_notifications(result, config_path, force=notify_without_events)
     if not result.events:
         console.print("No alert-worthy changes detected.")
+
+
+def _write_demo_config(
+    source_config_path: Path = DEFAULT_CONFIG_PATH,
+    demo_config_path: Path | None = None,
+    local_chrome_path: Path = LOCAL_CHROME_FOR_TESTING,
+) -> Path:
+    if not source_config_path.exists():
+        write_default_config(source_config_path)
+
+    data = yaml.safe_load(source_config_path.read_text(encoding="utf-8")) or {}
+    browser = data.setdefault("browser", {})
+    browser["headless"] = False
+    browser.setdefault("profile_dir", "~/.local/share/quick-cita-cr/browser-profile")
+
+    if not browser.get("executable_path") and local_chrome_path.expanduser().exists():
+        browser["executable_path"] = str(local_chrome_path.expanduser())
+
+    if demo_config_path is None:
+        demo_config_path = Path(user_data_dir("quick-cita-cr")) / "demo-config.yaml"
+    demo_config_path.expanduser().parent.mkdir(parents=True, exist_ok=True)
+    demo_config_path.expanduser().write_text(
+        yaml.safe_dump(data, sort_keys=False), encoding="utf-8"
+    )
+    return demo_config_path.expanduser()
+
+
+@app.command()
+def demo(
+    config_path: Path = typer.Option(DEFAULT_CONFIG_PATH, help="Source config file path."),
+    notify_without_events: bool = typer.Option(
+        True, help="Send/print summary even if there are no new alert events."
+    ),
+) -> None:
+    """Run a visible one-shot demo suitable for screen recording."""
+    demo_config_path = _write_demo_config(config_path)
+    console.print(f"Demo config: {demo_config_path}")
+    check(
+        config_path=demo_config_path,
+        headed=True,
+        notify_without_events=notify_without_events,
+    )
 
 
 @app.command()
