@@ -31,14 +31,14 @@ class HumanInterventionRequired(RuntimeError):
     pass
 
 
-class CoseviPlaywrightClient:
+class CoseviBrowserClient:
     def __init__(self, config: AppConfig, secrets: Secrets, headed: bool | None = None):
         self.config = config
         self.secrets = secrets
         self.headless = config.browser.headless if headed is None else not headed
         self._driver: Chrome | None = None
 
-    def __enter__(self) -> CoseviPlaywrightClient:
+    def __enter__(self) -> CoseviBrowserClient:
         profile_dir = self.config.browser.profile_dir.expanduser()
 
         driver = get_browser(
@@ -226,3 +226,6 @@ class CoseviPlaywrightClient:
                 )
         except TimeoutException:
             pass
+
+
+CoseviPlaywrightClient = CoseviBrowserClient

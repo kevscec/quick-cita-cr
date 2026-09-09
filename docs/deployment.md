@@ -1,34 +1,28 @@
-# Linux / Oracle Cloud deployment
+# Deployment
 
-This project is designed to run either as a long-running CLI process or as a scheduled systemd user timer.
+`quick-cita-cr` can run locally, on WSL, or on a Linux VM. The safest production pattern is a short-lived scheduled run using a persistent browser profile and SQLite state.
 
-Recommended production mode is the timer because every run is short-lived and state is persisted in SQLite.
+## Runtime requirements
+
+- Python 3.12 or 3.13
+- `uv`
+- Chrome or Chrome for Testing
+- A persistent profile directory
+- Educación Vial credentials in `~/.config/quick-cita-cr/secrets.env`
 
 ## Install
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y python3.12 python3.12-venv git
+sudo apt-get install -y python3.12 python3.12-venv git curl
 curl -LsSf https://astral.sh/uv/install.sh | sh
 git clone https://github.com/kevscec/quick-cita-cr.git ~/quick-cita-cr
 cd ~/quick-cita-cr
 uv sync --frozen
-uv run playwright install --with-deps chromium
-uv run playwright install chrome
 uv run quick-cita init
 ```
 
-For Cloudflare-sensitive flows, configure a real browser instead of Playwright's
-Chrome for Testing:
-
-```yaml
-browser:
-  headless: true
-  channel: chrome
-  executable_path: null
-  profile_dir: ~/.local/share/quick-cita-cr/browser-profile
-  timeout_seconds: 45
-```
+If `sudo` is unavailable or you do not want to install system Chrome, use Chrome for Testing under your home directory. See the README for the no-sudo install command.
 
 ## Configure
 
@@ -39,13 +33,36 @@ Edit:
 ~/.config/quick-cita-cr/secrets.env
 ```
 
+Recommended browser settings after live validation:
+
+```yaml
+browser:
+  headless: false
+  executable_path: /home/USER/.local/share/quick-cita-cr/chrome-for-testing/chrome-linux64/chrome
+  profile_dir: ~/.local/share/quick-cita-cr/browser-profile
+  timeout_seconds: 45
+```
+
 Protect secrets:
 
 ```bash
 chmod 600 ~/.config/quick-cita-cr/secrets.env
 ```
 
+## First run
+
+Run visibly once so Cloudflare can validate the browser/profile:
+
+```bash
+cd ~/quick-cita-cr
+uv run quick-cita check --headed
+```
+
+If the portal asks for manual verification, complete it in the visible browser. The persistent profile should retain cookies/state for later runs.
+
 ## systemd user timer
+
+Copy templates:
 
 ```bash
 mkdir -p ~/.config/systemd/user
@@ -56,8 +73,14 @@ systemctl --user enable --now quick-cita-cr.timer
 loginctl enable-linger "$USER"
 ```
 
-## Logs
+Check status:
 
 ```bash
+systemctl --user list-timers quick-cita-cr.timer
+systemctl --user status quick-cita-cr.service
 journalctl --user -u quick-cita-cr.service -f
 ```
+
+## Notes for Oracle Cloud
+
+Headed browser automation on a headless VM may require a virtual display such as Xvfb or a desktop session. Do not assume pure Chrome headless will pass Cloudflare; validate with the real VM before relying on unattended monitoring.

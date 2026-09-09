@@ -38,7 +38,11 @@ def test_new_fast_branch_date_emits_within_window(tmp_path) -> None:
         today=date(2026, 9, 8),
     )
 
-    assert {event.event_type for event in events} >= {EventType.NEW_DATE, EventType.WITHIN_WINDOW, EventType.EARLIER_BEST}
+    assert {event.event_type for event in events} >= {
+        EventType.NEW_DATE,
+        EventType.WITHIN_WINDOW,
+        EventType.EARLIER_BEST,
+    }
 
 
 def test_existing_far_dates_do_not_alert_after_first_run(tmp_path) -> None:

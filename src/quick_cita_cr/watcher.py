@@ -78,7 +78,9 @@ def detect_events(
 
 
 class Watcher:
-    def __init__(self, client: CoseviClient, storage: Storage, appointment_config: AppointmentConfig):
+    def __init__(
+        self, client: CoseviClient, storage: Storage, appointment_config: AppointmentConfig
+    ):
         self.client = client
         self.storage = storage
         self.appointment_config = appointment_config

@@ -50,7 +50,9 @@ def parse_appointment_dates(text: str, branch: str) -> tuple[AppointmentSlot, ..
             int(match.group("year")), int(match.group("month")), int(match.group("day"))
         )
         if slot_date not in seen:
-            slots.append(AppointmentSlot(branch=branch, date=slot_date, raw_text=match.group(0).strip()))
+            slots.append(
+                AppointmentSlot(branch=branch, date=slot_date, raw_text=match.group(0).strip())
+            )
             seen.add(slot_date)
 
     for match in DATE_TEXT_RE.finditer(clean):
@@ -60,7 +62,9 @@ def parse_appointment_dates(text: str, branch: str) -> tuple[AppointmentSlot, ..
             continue
         slot_date = date(int(match.group("year")), month, int(match.group("day")))
         if slot_date not in seen:
-            slots.append(AppointmentSlot(branch=branch, date=slot_date, raw_text=match.group(0).strip()))
+            slots.append(
+                AppointmentSlot(branch=branch, date=slot_date, raw_text=match.group(0).strip())
+            )
             seen.add(slot_date)
 
     return tuple(sorted(slots, key=lambda slot: slot.date))

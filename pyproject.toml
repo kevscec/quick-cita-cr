@@ -1,14 +1,13 @@
 [project]
 name = "quick-cita-cr"
 version = "0.1.0"
-description = "Polite local monitor for fast Costa Rica Educación Vial appointment openings."
+description = "Personal monitor for Costa Rica Educación Vial appointment openings."
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
 authors = [{ name = "Kevin Ceciliano" }]
-keywords = ["costa-rica", "cosevi", "educacion-vial", "appointments", "playwright", "monitoring"]
+keywords = ["costa-rica", "cosevi", "educacion-vial", "appointments", "selenium", "monitoring"]
 dependencies = [
-  "playwright>=1.49.0",
   "pydantic>=2.10.0",
   "pydantic-settings>=2.6.0",
   "typer>=0.15.0",

@@ -14,7 +14,7 @@ from .config import (
     load_secrets,
     write_default_config,
 )
-from .cosevi_client import CoseviPlaywrightClient, HumanInterventionRequired
+from .cosevi_client import CoseviBrowserClient, HumanInterventionRequired
 from .models import WatchResult
 from .notifications import EmailNotifier, Notifier, format_events
 from .safety import next_sleep_seconds
@@ -83,7 +83,9 @@ def doctor(config_path: Path = typer.Option(DEFAULT_CONFIG_PATH, help="Config fi
 
 
 @app.command("notify-test")
-def notify_test(config_path: Path = typer.Option(DEFAULT_CONFIG_PATH, help="Config file path.")) -> None:
+def notify_test(
+    config_path: Path = typer.Option(DEFAULT_CONFIG_PATH, help="Config file path."),
+) -> None:
     for notifier in _build_notifiers(config_path):
         notifier.send("quick-cita-cr: test", "This is a quick-cita-cr notification test.")
     console.print("Notification test sent.")
@@ -94,13 +96,15 @@ def check(
     config_path: Path = typer.Option(DEFAULT_CONFIG_PATH, help="Config file path."),
     once: bool = typer.Option(True, "--once", help="Run one check and exit."),
     headed: bool = typer.Option(False, "--headed", help="Show browser window."),
-    notify_without_events: bool = typer.Option(False, help="Send summary even if there are no alerts."),
+    notify_without_events: bool = typer.Option(
+        False, help="Send summary even if there are no alerts."
+    ),
 ) -> None:
     del once
     config = load_config(config_path)
     secrets = load_secrets()
     storage = Storage(config.database_path.expanduser())
-    with CoseviPlaywrightClient(config, secrets, headed=headed) as client:
+    with CoseviBrowserClient(config, secrets, headed=headed) as client:
         watcher = Watcher(client, storage, config.appointment)
         result = watcher.check_once()
     _send_notifications(result, config_path, force=notify_without_events)
