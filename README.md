@@ -73,6 +73,14 @@ Run one visible check:
 uv run quick-cita check --headed
 ```
 
+Run a visual demo for screen recording:
+
+```bash
+uv run quick-cita-cr demo
+```
+
+The demo command opens the browser visibly, uses the persistent profile, checks the configured branches, and prints the appointment summary even when there are no new alert events.
+
 Run continuously:
 
 ```bash
