@@ -56,7 +56,9 @@ class Storage:
 
     def get_previous_best(self, branch: str) -> date | None:
         with self._connect() as con:
-            row = con.execute("SELECT MIN(slot_date) AS best FROM slots WHERE branch = ?", (branch,)).fetchone()
+            row = con.execute(
+                "SELECT MIN(slot_date) AS best FROM slots WHERE branch = ?", (branch,)
+            ).fetchone()
         if row is None or row["best"] is None:
             return None
         return date.fromisoformat(row["best"])

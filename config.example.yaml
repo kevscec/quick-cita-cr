@@ -2,26 +2,31 @@ appointment:
   license_class: B1
   branches:
     - ALAJUELA
-    - HEREDIA
-  quick_window_days: 21
+    - SAN RAMON
+  quick_window_days: 14
   notify_on_first_run: true
   notify_on_new_dates: true
   notify_on_earlier_best: true
   notify_on_within_window: true
+
 schedule:
   interval_minutes: 12
   jitter_percent: 20
   max_failures_before_pause: 3
   pause_minutes_after_failures: 60
+
 browser:
-  headless: true
-  # Prefer a real installed browser for production. Examples:
-  # channel: chrome
-  # executable_path: /usr/bin/google-chrome-stable
-  channel: null
+  # Cloudflare was validated in headed mode. Use false unless you have a warmed
+  # profile or a virtual display strategy that works on your host.
+  headless: false
+  # Optional. If null, undetected_chromedriver searches for Chrome/Chromium.
   executable_path: null
+  # Legacy/no-op config keys kept for compatibility with older local configs.
+  channel: null
+  cdp_url: null
   profile_dir: ~/.local/share/quick-cita-cr/browser-profile
   timeout_seconds: 45
+
 notifications:
   email:
     enabled: true

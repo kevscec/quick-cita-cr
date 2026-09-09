@@ -42,7 +42,7 @@ class ScheduleConfig(BaseModel):
 
 
 class BrowserConfig(BaseModel):
-    headless: bool = True
+    headless: bool = False
     channel: str | None = None
     executable_path: Path | None = None
     cdp_url: str | None = None
@@ -132,7 +132,7 @@ schedule:
   max_failures_before_pause: 3
   pause_minutes_after_failures: 60
 browser:
-  headless: true
+  headless: false
   channel: null
   executable_path: null
   cdp_url: null

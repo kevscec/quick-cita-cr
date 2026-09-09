@@ -1,0 +1,36 @@
+name: Bug report
+description: Report a reproducible bug
+title: "bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include credentials, screenshots from authenticated sessions, cookies, browser profiles, or identity/receipt numbers.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Commands and sanitized config needed to reproduce.
+      placeholder: |
+        uv run quick-cita doctor
+        uv run quick-cita check --headed
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized logs
+      render: text

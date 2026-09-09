@@ -1,20 +1,30 @@
 # Python
 __pycache__/
 *.py[cod]
+*$py.class
 .venv/
+venv/
+.envrc
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
 .coverage
+coverage.xml
 htmlcov/
 dist/
 build/
 *.egg-info/
 
-# Secrets and local state
+# Secrets
 .env
 .env.*
 !.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local quick-cita state
 *.db
 *.sqlite
 *.sqlite3
@@ -24,8 +34,17 @@ screenshots/
 browser-profile/
 storage_state.json
 playwright/.auth/
+chrome-for-testing/
+*.log
 
-# OS / editors
+# Generated/runtime files
 .DS_Store
+Thumbs.db
 .idea/
 .vscode/
+*.swp
+*.swo
+
+# Hermes/local agent workspace
+.hermes/
+QUICK_CITA_CR_SUMMARY.md

@@ -1,25 +1,41 @@
 # Security model
 
-`quick-cita-cr` is public-source software for personal monitoring with your own credentials.
+`quick-cita-cr` is personal automation that uses your own Educación Vial and email credentials. Treat the local machine and browser profile as sensitive.
+
+## Never commit
+
+- `.env` or `.env.*` files, except `.env.example`
+- `~/.config/quick-cita-cr/secrets.env`
+- SQLite state databases
+- browser profiles, cookies, local storage, or Chrome user data
+- screenshots/logs from authenticated sessions
+- raw authenticated HTML
+- receipt numbers, IDs, passwords, Gmail app passwords, or tokens
 
 ## Secrets
 
-Never commit:
+Secrets are loaded from environment variables or `~/.config/quick-cita-cr/secrets.env`.
 
-- `.env`
-- `~/.config/quick-cita-cr/secrets.env`
-- SQLite state databases
-- browser profiles
-- cookies or Playwright storage state
-- screenshots/logs from authenticated sessions
-- receipt numbers, IDs, passwords, or email app passwords
+Use:
 
-Use Gmail App Passwords for SMTP. Do not use your normal Google password.
+```bash
+chmod 600 ~/.config/quick-cita-cr/secrets.env
+```
 
-## Browser automation boundaries
+Use a Gmail App Password for SMTP. Do not use your normal Google password.
 
-This project intentionally does not implement CAPTCHA bypass, proxy rotation, fingerprint spoofing, or access-control evasion. If the portal asks for verification or denies access, the run fails closed and asks for human intervention.
+## Browser profile
+
+The browser profile may contain authenticated cookies and Cloudflare/session state. Keep it local and excluded from git:
+
+```text
+~/.local/share/quick-cita-cr/browser-profile
+```
 
 ## Logging
 
-Logs should describe branches, dates, and tool state only. Do not log form inputs, cookies, local storage, full authenticated HTML, or screenshots by default.
+Logs should include only branch names, dates, event types, and high-level tool state. Do not log form inputs, cookies, full page HTML, screenshots, or secret values.
+
+## Public repository posture
+
+This repository should contain reusable code, docs, tests, service templates, and examples only. Operational state belongs on the host machine, not in git.
